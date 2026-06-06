@@ -1,6 +1,17 @@
 # my_open_source_app
 
-A new Flutter project.
+A Flutter project.
+
+## How to Run
+1. Ensure you have [Flutter installed](https://docs.flutter.dev/get-started/install).
+2. Clone the repository:
+   `git clone https://github.com/BaldyMcBaldy/Stuff.git`
+3. Navigate into the directory:
+   `cd Stuff`
+4. Get dependencies:
+   `flutter pub get`
+5. Run the app:
+   `flutter run`
 
 ## Getting Started
 
