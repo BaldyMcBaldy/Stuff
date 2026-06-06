@@ -6,12 +6,12 @@ import 'dart:typed_data';
 import 'dart:io';
 import 'dart:math';
 import 'dart:async';
-import 'dart:convert'; // Added for base64 decoding of ID3 APIC frames
-import 'package:palette_generator/palette_generator.dart'; 
+import 'dart:convert';
+import 'package:palette_generator/palette_generator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await StorageService.init(); // Initialize the database
+  await StorageService.init();
   runApp(const MyMusicApp());
 }
 
@@ -23,7 +23,7 @@ class MyMusicApp extends StatefulWidget {
 }
 
 class _MyMusicAppState extends State<MyMusicApp> {
-  Color _accentColor = const Color(0xFFD4AF37); 
+  Color _accentColor = const Color(0xFFD4AF37);
   Color _accentContainerColor = const Color(0xFF252114);
 
   void _updateThemeColor(Color major, Color container) {
@@ -39,13 +39,13 @@ class _MyMusicAppState extends State<MyMusicApp> {
       title: "Gio's Music App",
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0D0D0D), 
+        scaffoldBackgroundColor: const Color(0xFF0D0D0D),
         colorScheme: ColorScheme.dark(
           primary: _accentColor,
           secondary: _accentColor.withOpacity(0.7),
-          surface: const Color(0xFF161616), 
+          surface: const Color(0xFF161616),
           onSurface: Colors.white,
-          primaryContainer: _accentContainerColor, 
+          primaryContainer: _accentContainerColor,
         ),
         dividerTheme: const DividerThemeData(color: Color(0xFF2A2A2A)),
       ),
@@ -65,38 +65,39 @@ class MusicPlayerHomePage extends StatefulWidget {
 class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final TextEditingController _searchController = TextEditingController();
-  
+
   late AnimationController _waveAnimationController;
   late AnimationController _visualizerController;
-  
+
   bool _isPlaying = false;
-  bool _isQueueOpen = true; 
-  bool _isScanning = false; 
+  bool _isQueueOpen = true;
+  bool _isScanning = false;
   bool _isShuffleOn = false;
   bool _isLoopOn = false;
-  
-  bool _isWaveForm = true;          
-  double _timelineThickness = 3.0;  
-  bool _isRecordPlayerMode = true; 
-  double _spinSpeedFactor = 1.0;    
-  
+
+  bool _isWaveForm = true;
+  double _timelineThickness = 3.0;
+  bool _isRecordPlayerMode = true;
+  double _spinSpeedFactor = 1.0;
+  double _animationSpeedFactor = 1.0; 
+
   bool _autoAdvanceNext = true;
   double _waveSpeedFactor = 1.0;
-  double _volume = 0.8; 
-  int _sidebarTab = 0; // 0 = System Folders Explorer, 1 = Active Playback Queue List
-  
+  double _volume = 0.8;
+  int _sidebarTab = 0; 
+
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
-  
+
   Map<String, List<File>> _groupedPlaylist = {};
-  List<File> _flatTrackList = []; // Acts as our live runtime audio queue sequence
+  List<File> _flatTrackList = [];
   List<int> _shuffledIndices = [];
   int _currentIndex = -1;
-  
+
   String _currentTrackName = "No tracks loaded";
   String _searchQuery = "";
   Uint8List? _albumArtBytes;
-  ui.Image? _decodedVinylImage; 
+  ui.Image? _decodedVinylImage;
 
   // Scratch / drag interaction parameters
   double _dragStartAngle = 0.0;
@@ -105,19 +106,21 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
   @override
   void initState() {
     super.initState();
-    
-    _waveAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-
-    _visualizerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
+    _waveAnimationController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+    _visualizerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
 
     _setupAudioListeners();
     _autoScanSystemMusic();
+  }
+
+  void _updateAnimationSpeed(double speed) {
+    setState(() {
+      _animationSpeedFactor = speed;
+      _waveAnimationController.duration = Duration(milliseconds: (2000 / speed).toInt());
+      _visualizerController.duration = Duration(milliseconds: (1500 / speed).toInt());
+      _waveAnimationController.repeat();
+      _visualizerController.repeat();
+    });
   }
 
   void _setupAudioListeners() {
@@ -168,12 +171,10 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
     }
   }
 
-  // Load stored library (Fallback or integration method)
   Future<void> _loadStoredLibrary() async {
     await _autoScanSystemMusic();
   }
 
-  // Rescan metadata database and reload UI
   Future<void> _clearCacheAndRescan() async {
     setState(() {
       _isScanning = true;
@@ -184,7 +185,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
     });
     
     try {
-      // Calls your metadata scanning database helper
       await MetadataService.scanMusic(); 
     } catch (e) {
       debugPrint("MetadataService scan failed: $e");
@@ -290,7 +290,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
 
     bool artFound = false;
 
-    // 1. ATTEMPT EMBEDDED ART
     if (currentFile.path.toLowerCase().endsWith('.mp3')) {
       try {
         final fileBytes = await File(currentFile.path).readAsBytes();
@@ -321,7 +320,7 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                     _albumArtBytes = base64Decode(base64Str!.trim());
                   });
                   artFound = true;
-                  break; // Successful extraction
+                  break; 
                 }
               } catch (ex) {
                 debugPrint("Failed to parse embedded artwork frame: $ex");
@@ -334,7 +333,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
       }
     }
 
-    // 2. ATTEMPT FOLDER ART FALLBACK (if no embedded art found)
     if (!artFound) {
       try {
         final Directory parentDir = currentFile.parent;
@@ -352,14 +350,12 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
       }
     }
 
-    // 3. APPLY THEME AND DECODE VINYL
     if (_albumArtBytes != null) {
       final themeColors = await ThemeService.generateColorsFromImage(_albumArtBytes!);
       widget.onThemeChanged(themeColors['primary']!, themeColors['container']!);
       await _decodeVinylImage(_albumArtBytes!);
     }
 
-    // 4. HANDLE PLAYBACK
     if (_isPlaying) {
       await _audioPlayer.play(DeviceFileSource(currentFile.path));
     } else {
@@ -435,7 +431,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
     _audioPlayer.seek(Duration(milliseconds: targetMilliseconds));
   }
 
-  // Calculate rotation math based on gesture center point coordinates
   double _calculateVinylAngle(Offset localPosition, Size widgetSize) {
     final double centerX = widgetSize.width / 2;
     final double centerY = widgetSize.height / 2;
@@ -456,7 +451,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
     if (deltaAngle > pi) deltaAngle -= 2 * pi;
     if (deltaAngle < -pi) deltaAngle += 2 * pi;
 
-    // Map rotational movement directly into track scrubbing time modifications
     final double continuousScrubRatio = deltaAngle / (2 * pi);
     final int msShift = (continuousScrubRatio * 25000 * _spinSpeedFactor).toInt(); 
     final int updatedPositionMs = (_position.inMilliseconds + msShift).clamp(0, _duration.inMilliseconds);
@@ -559,6 +553,17 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                     ],
                   ),
                   const SizedBox(height: 24),
+
+                  Text("GLOBAL ANIMATION SPEED (${_animationSpeedFactor.toStringAsFixed(1)}x)", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.4), letterSpacing: 1)),
+                  Slider(
+                    min: 0.2,
+                    max: 3.0,
+                    divisions: 14,
+                    activeColor: colors.primary,
+                    value: _animationSpeedFactor,
+                    onChanged: (val) => _updateAnimationSpeed(val),
+                  ),
+                  const SizedBox(height: 20),
 
                   Text("TIMELINE VISUAL CUSTOMIZATION", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.4), letterSpacing: 1)),
                   const SizedBox(height: 6),
@@ -669,7 +674,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
 
       body: Stack(
         children: [
-          // BACKGROUND GLOW PASS 
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 600),
@@ -710,7 +714,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
             ),
           ),
 
-          // CORE WORKSTATION LAYER INTERFACE
           Row(
             children: [
               AnimatedContainer(
@@ -723,7 +726,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // DUAL TABS MANAGER
                             Container(
                               color: const Color(0xFF161616).withOpacity(0.5),
                               child: Row(
@@ -764,7 +766,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                               ),
                             ),
 
-                            // TAB CONTENT RENDERING DISPATCHER
                             Expanded(
                               child: _sidebarTab == 0
                                   ? Column(
@@ -831,7 +832,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                                           final File item = _flatTrackList.removeAt(oldIndex);
                                           _flatTrackList.insert(newIndex, item);
                                           
-                                          // Keep tracker matching track location safely
                                           if (_currentIndex == oldIndex) {
                                             _currentIndex = newIndex;
                                           } else if (_currentIndex > oldIndex && _currentIndex <= newIndex) {
@@ -849,17 +849,15 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                                         return Material(
                                           key: ValueKey(fileItem.path),
                                           color: isCurrent ? colors.primaryContainer : Colors.transparent,
-                                          child: CustomPaint(
-                                            child: ListTile(
-                                              leading: CircleAvatar(
-                                                radius: 11,
-                                                backgroundColor: isCurrent ? colors.primary : Colors.white10,
-                                                child: Text("${idx + 1}", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isCurrent ? Colors.black : Colors.white60)),
-                                              ),
-                                              title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: isCurrent ? colors.primary : Colors.white.withOpacity(0.8), fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal)),
-                                              trailing: const Icon(Icons.drag_handle_rounded, size: 16, color: Colors.white24),
-                                              onTap: () => _loadTrack(idx),
+                                          child: ListTile(
+                                            leading: CircleAvatar(
+                                              radius: 11,
+                                              backgroundColor: isCurrent ? colors.primary : Colors.white10,
+                                              child: Text("${idx + 1}", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isCurrent ? Colors.black : Colors.white60)),
                                             ),
+                                            title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: isCurrent ? colors.primary : Colors.white.withOpacity(0.8), fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal)),
+                                            trailing: const Icon(Icons.drag_handle_rounded, size: 16, color: Colors.white24),
+                                            onTap: () => _loadTrack(idx),
                                           ),
                                         );
                                       },
@@ -879,7 +877,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // INTERACTIVE GESTURE SYSTEM FOR VINYL DECK
                       _isRecordPlayerMode 
                         ? GestureDetector(
                             onPanStart: (details) => _handleVinylScratchStart(details.localPosition, const Size(290, 290)),
@@ -911,7 +908,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
                           ),
                       const SizedBox(height: 16),
 
-                      // DYNAMIC SPECTRUM MATRIX AUDIO VISUALIZER BARS
                       RepaintBoundary(
                         child: CustomPaint(
                           size: const Size(360, 32),
@@ -1016,7 +1012,6 @@ class _MusicPlayerHomePageState extends State<MusicPlayerHomePage> with TickerPr
 
                           const Spacer(),
 
-                          // COMPACT CONTROL SLIDER VOLUME MODULE
                           SizedBox(
                             width: 140,
                             child: Row(
@@ -1108,29 +1103,28 @@ class MicroSpectrumVisualizerPainter extends CustomPainter {
     
     final Paint paint = Paint()..style = PaintingStyle.fill;
 
+    // Apply smoothing curve to the animation
+    final double smoothAnim = Curves.easeInOutSine.transform(animation.value);
+
     for (int i = 0; i < barCount; i++) {
-      double calculatedHeightFactor = 0.15; // Baseline noise floor rest state height
+      double factor = 0.15; // Baseline noise floor rest state height
 
       if (isPlaying) {
-        // Form mathematical soundscape wave harmonics using composite trigonometric loops
-        final double phase1 = sin((animation.value * 2 * pi) + (i * 0.4));
-        final double phase2 = cos((animation.value * 4 * pi) - (i * 0.9));
-        calculatedHeightFactor = ((phase1 * 0.45) + (phase2 * 0.35)).abs().clamp(0.12, 1.0);
+        final double phase1 = sin((smoothAnim * 2 * pi) + (i * 0.4));
+        final double phase2 = cos((smoothAnim * 4 * pi) - (i * 0.9));
+        factor = ((phase1 * 0.45) + (phase2 * 0.35)).abs().clamp(0.12, 1.0);
         
-        // Emphasize bass/treble profiles depending on side coordinates
-        if (i < 6) calculatedHeightFactor *= 1.15; // Low-end kick simulation
-        if (i > 22) calculatedHeightFactor *= 0.85; // High-frequency dampening
+        if (i < 6) factor *= 1.15; 
+        if (i > 22) factor *= 0.85; 
       } else {
-        // Tiny idle ambient breathing motion
-        calculatedHeightFactor = 0.12 + (sin((animation.value * pi) + (i * 0.2)).abs() * 0.05);
+        factor = 0.12 + (sin((smoothAnim * pi) + (i * 0.2)).abs() * 0.05);
       }
 
-      final double currentBarHeight = size.height * calculatedHeightFactor;
+      final double currentBarHeight = size.height * factor;
       final double xPos = i * (barWidth + spacing);
       final double yPos = size.height - currentBarHeight;
 
-      // Draw subtle color gradients down the bars
-      paint.color = barColor.withOpacity(0.3 + (calculatedHeightFactor * 0.7));
+      paint.color = barColor.withOpacity(0.3 + (factor * 0.7));
 
       final RRect roundedBar = RRect.fromRectAndRadius(
         Rect.fromLTWH(xPos, yPos, barWidth, currentBarHeight),
@@ -1145,7 +1139,7 @@ class MicroSpectrumVisualizerPainter extends CustomPainter {
 }
 
 // -----------------------------------------------------------------------------
-// ISOLATED DECK SUB-MODULE (ZERO SETSTATE METHOD FOR RENDERING PARTICLES)
+// ISOLATED DECK SUB-MODULE (AnimationController driven ticker loop)
 // -----------------------------------------------------------------------------
 class IsolatedVinylDeck extends StatefulWidget {
   final bool isPlaying;
@@ -1165,10 +1159,10 @@ class IsolatedVinylDeck extends StatefulWidget {
   State<IsolatedVinylDeck> createState() => _IsolatedVinylDeckState();
 }
 
-class _IsolatedVinylDeckState extends State<IsolatedVinylDeck> with SingleTickerProviderStateMixin {
+class _IsolatedVinylDeckState extends State<IsolatedVinylDeck> with TickerProviderStateMixin {
   late AnimationController _spinController;
+  late AnimationController _particleController;
   late final ParticleChangeNotifier _particleNotifier;
-  Timer? _particleTimer;
 
   @override
   void initState() {
@@ -1179,18 +1173,24 @@ class _IsolatedVinylDeckState extends State<IsolatedVinylDeck> with SingleTicker
       duration: Duration(milliseconds: (3000 / widget.spinSpeedFactor).toInt()),
     );
 
+    // Efficient screen-refresh animation-frame controller loop
+    _particleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+    _particleController.addListener(() {
+      if (mounted) {
+        _particleNotifier.tick(widget.isPlaying);
+      }
+    });
+
     if (widget.isPlaying) {
       _spinController.repeat();
     }
-
-    _particleTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!mounted) return;
-      _particleNotifier.tick(widget.isPlaying);
-    });
   }
 
   @override
-  void didUpdateWidget(covariant IsolatedVinylDeck oldWidget) {
+  void didUpdateWidget(IsolatedVinylDeck oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.spinSpeedFactor != oldWidget.spinSpeedFactor || widget.isPlaying != oldWidget.isPlaying) {
       _particleNotifier.speedFactor = widget.spinSpeedFactor;
@@ -1205,8 +1205,8 @@ class _IsolatedVinylDeckState extends State<IsolatedVinylDeck> with SingleTicker
 
   @override
   void dispose() {
-    _particleTimer?.cancel();
     _spinController.dispose();
+    _particleController.dispose();
     _particleNotifier.dispose();
     super.dispose();
   }
