@@ -116,21 +116,3 @@ flutter run -d macos
 ## 🤝 Contributing
 
 Contributions, bug reports, and feature requests are welcome. Feel free to open an issue or submit a pull request.
-
----
-
-## 📄 License
-
-Add your preferred license here (MIT, GPL, Apache 2.0, etc.).
-
----
-
-## 📝 Updating This README
-
-After making changes:
-
-```bash
-git add README.md
-git commit -m "docs: update installation guide"
-git push origin main
-```
